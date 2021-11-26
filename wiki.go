@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"log"
 	"net/http"
@@ -14,15 +15,34 @@ type Page struct {
 }
 
 var (
-	templates = template.Must(template.ParseFiles("./tmpl/edit.html", "./tmpl/view.html"))
-	validPath = regexp.MustCompile(`^/(edit|save|view)/([a-zA-Z0-9]+)$`)
+	templates  = template.Must(template.ParseFiles("./tmpl/edit.html", "./tmpl/view.html"))
+	validPath  = regexp.MustCompile(`^/(edit|save|view)/([a-zA-Z0-9]+)$`)
+	wikiSyntax = regexp.MustCompile(`\[[a-zA-Z0-9]+\]`)
 )
 
+func applyWikiSyntax(src []byte) []byte {
+	return wikiSyntax.ReplaceAllFunc(src, func(m []byte) []byte {
+		title := string(m[1 : len(m)-1])
+		return []byte(`<a href="/view/` + title + `">[` + title + `]</a>`)
+	})
+}
+
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	err := templates.ExecuteTemplate(w, tmpl+".html", p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	if tmpl == "view" {
+		var buf bytes.Buffer
+		err := templates.ExecuteTemplate(&buf, tmpl+".html", p)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// apply syntax
+		w.Write(applyWikiSyntax(buf.Bytes()))
+	} else {
+		err := templates.ExecuteTemplate(w, tmpl+".html", p)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

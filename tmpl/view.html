@@ -2,12 +2,18 @@
 <html>
     <head>
         <title>{{.Title}}</title>
+    <style>
+        h1 {
+            font-size: 30px;
+            color: red;
+        }
+    </style>
     </head>
     <body>
         <h1>{{.Title}}</h1>
         <p>[<a href="/edit/{{.Title}}">edit</a>]</p>
         <div>
-            {{printf "%s" .Body}}
+            <pre>{{printf "%s" .Body}}</pre>
         </div>
     </body>
 </html>
